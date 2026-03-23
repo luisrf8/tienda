@@ -1,0 +1,388 @@
+@import "tailwindcss";
+
+:root {
+  --cream: #f7f2e9;
+  --ink: #1b1b1b;
+  --orange: #ff6f3c;
+  --teal: #108c84;
+  --sand: #fff8ef;
+  --line: #251f1a;
+}
+
+@theme inline {
+  --color-background: var(--cream);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-space-grotesk);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 14%, #ffd8b8 0, transparent 32%),
+    radial-gradient(circle at 90% 10%, #9be5dc 0, transparent 30%),
+    linear-gradient(165deg, #f8f5ef, #ffe8d8 55%, #fcebd3);
+  min-height: 100vh;
+}
+
+.dashboard-shell {
+  width: min(1200px, calc(100vw - 2rem));
+  margin: 1.6rem auto 2.2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-card,
+.panel {
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  background: var(--sand);
+  box-shadow: 5px 5px 0 #d0bfa8;
+}
+
+.hero-card {
+  padding: 1.2rem 1.3rem;
+  animation: lift-in 440ms ease-out;
+}
+
+.hero-card .kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--teal);
+  font-size: 0.8rem;
+}
+
+.hero-card h1 {
+  margin: 0.45rem 0;
+  font-size: clamp(1.3rem, 3.4vw, 2rem);
+}
+
+.hero-card p {
+  margin: 0;
+  max-width: 80ch;
+}
+
+.panel-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.panel {
+  padding: 1rem;
+  animation: lift-in 500ms ease-out;
+}
+
+.panel h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.06rem;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+label span {
+  display: block;
+  margin-bottom: 0.34rem;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+input[type="date"] {
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+select {
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+}
+
+.channel-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.checkbox {
+  border: 2px solid var(--line);
+  border-radius: 100px;
+  padding: 0.45rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #fff;
+}
+
+.button-row {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+button {
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 0.62rem 0.9rem;
+  font-weight: 700;
+  background: var(--orange);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+button.secondary {
+  background: var(--teal);
+}
+
+button.ghost {
+  background: #fff;
+  color: var(--ink);
+}
+
+button.small-button {
+  padding: 0.38rem 0.62rem;
+  font-size: 0.78rem;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.msg {
+  margin: 0.6rem 0 0;
+  font-size: 0.88rem;
+}
+
+.msg.ok {
+  color: #0d7e59;
+}
+
+.msg.error {
+  color: #b42318;
+}
+
+.metric-caption {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.metric-grid {
+  margin-top: 0.72rem;
+  display: grid;
+  gap: 0.62rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.section-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.4fr 0.9fr;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.panel-head.compact {
+  margin-bottom: 0.55rem;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.connection-grid,
+.stack-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.connection-card {
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.8rem;
+}
+
+.mini-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mini-grid.wide {
+  grid-template-columns: 1.3fr 1fr 0.8fr;
+}
+
+.checkbox.small {
+  padding: 0.32rem 0.58rem;
+}
+
+.checkbox.inline-row {
+  margin-top: 1.55rem;
+}
+
+.compact-list {
+  margin-top: 0.7rem;
+}
+
+.compact-row {
+  margin-top: 0.65rem;
+  align-items: center;
+}
+
+.subtle {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+
+.run-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--line);
+}
+
+.run-success {
+  background: #dbf5ea;
+}
+
+.run-failed {
+  background: #fde0dd;
+}
+
+.metric {
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.62rem;
+}
+
+.metric span {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.metric strong {
+  font-size: 1rem;
+}
+
+.table-panel {
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+th,
+td {
+  border-bottom: 1px solid #dccdbb;
+  text-align: left;
+  padding: 0.64rem 0.46rem;
+  font-size: 0.88rem;
+}
+
+th {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 960px) {
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-shell {
+    width: calc(100vw - 1.1rem);
+    margin: 0.56rem auto 1.2rem;
+  }
+
+  .panel,
+  .hero-card {
+    border-radius: 16px;
+    padding: 0.9rem;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-grid,
+  .mini-grid.wide {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@keyframes lift-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

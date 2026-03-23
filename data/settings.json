@@ -1,0 +1,40 @@
+{
+  "connections": [
+    {
+      "channel": "tiendanube",
+      "enabled": true,
+      "mode": "demo",
+      "storeName": "Demo Tiendanube",
+      "credentials": {}
+    },
+    {
+      "channel": "shopify",
+      "enabled": true,
+      "mode": "demo",
+      "storeName": "Demo Shopify",
+      "credentials": {}
+    },
+    {
+      "channel": "mercadolibre",
+      "enabled": true,
+      "mode": "demo",
+      "storeName": "Demo MercadoLibre",
+      "credentials": {}
+    }
+  ],
+  "exportSettings": {
+    "enabled": true,
+    "sheetTab": "Ventas"
+  },
+  "automations": [
+    {
+      "id": "daily-close",
+      "name": "Cierre diario",
+      "channels": ["tiendanube", "shopify", "mercadolibre"],
+      "fromDaysBack": 1,
+      "schedule": "daily",
+      "enabled": true,
+      "exportToSheets": true
+    }
+  ]
+}
