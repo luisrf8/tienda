@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local runtime secrets
+/data/settings.json
+/data/runs.json
+/tn_oauth_cookies.txt
+
 # vercel
 .vercel
 

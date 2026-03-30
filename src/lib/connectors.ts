@@ -1,5 +1,6 @@
 import { ChannelConnection, RawOrder, SalesChannel } from "@/lib/types";
 import { fetchShopifyOrders, testShopifyConnection } from "@/lib/shopify";
+import { fetchTiendanubeOrders, testTiendanubeConnection } from "@/lib/tiendanube";
 
 const randomBetween = (min: number, max: number): number => {
   return Math.round((min + Math.random() * (max - min)) * 100) / 100;
@@ -55,6 +56,10 @@ export const fetchOrdersFromChannel = async (
     return fetchShopifyOrders(connection, from, to);
   }
 
+  if (channel === "tiendanube") {
+    return fetchTiendanubeOrders(connection, from, to);
+  }
+
   throw new Error(`La integracion API real para ${channel} todavia no esta implementada.`);
 };
 
@@ -72,6 +77,15 @@ export const testChannelConnection = async (connection: ChannelConnection) => {
     return {
       ok: true,
       message: "Conexion Shopify valida.",
+      details,
+    };
+  }
+
+  if (connection.channel === "tiendanube") {
+    const details = await testTiendanubeConnection(connection);
+    return {
+      ok: true,
+      message: "Conexion Tiendanube valida.",
       details,
     };
   }

@@ -21,6 +21,36 @@ type ConnectionTestState = ApiState & {
   details?: string;
 };
 
+type TiendanubeProductRow = {
+  id: string;
+  name: string;
+  published: boolean;
+  freeShipping: boolean;
+  permalink: string;
+  createdAt: string;
+  updatedAt: string;
+  variants: number;
+  stock: number;
+  price: number | null;
+  promotionalPrice: number | null;
+  sku: string;
+};
+
+type TiendanubeSaleRow = {
+  id: string;
+  date: string;
+  status: "paid" | "pending" | "cancelled";
+  customerName?: string;
+  currency: string;
+  total: number;
+  discount: number;
+  shipping: number;
+  marketplaceFee: number;
+  tax: number;
+  iibb: number;
+  otherCharges: number;
+};
+
 const CHANNELS: SalesChannel[] = ["tiendanube", "shopify", "mercadolibre"];
 
 const defaultSettings: AppSettings = {
@@ -96,6 +126,13 @@ export function AdminDashboard() {
   const [settingsState, setSettingsState] = useState<ApiState>({ loading: false, message: "", error: "" });
   const [automationState, setAutomationState] = useState<ApiState>({ loading: false, message: "", error: "" });
   const [connectionTests, setConnectionTests] = useState<Record<string, ConnectionTestState>>({});
+  const [productsState, setProductsState] = useState<ApiState>({ loading: false, message: "", error: "" });
+  const [tiendanubeProducts, setTiendanubeProducts] = useState<TiendanubeProductRow[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [productLimit, setProductLimit] = useState(300);
+  const [salesState, setSalesState] = useState<ApiState>({ loading: false, message: "", error: "" });
+  const [tiendanubeSales, setTiendanubeSales] = useState<TiendanubeSaleRow[]>([]);
+  const [salesLimit, setSalesLimit] = useState(200);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -104,6 +141,30 @@ export function AdminDashboard() {
     params.set("channels", selectedChannels.join(","));
     return params.toString();
   }, [dateRange.from, dateRange.to, selectedChannels]);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) {
+      return tiendanubeProducts;
+    }
+
+    return tiendanubeProducts.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        item.sku.toLowerCase().includes(q),
+    );
+  }, [productSearch, tiendanubeProducts]);
+
+  const activeConnectionsCount = useMemo(
+    () => settings.connections.filter((connection) => connection.enabled).length,
+    [settings.connections],
+  );
+
+  const apiConnectionsCount = useMemo(
+    () => settings.connections.filter((connection) => connection.enabled && connection.mode === "api").length,
+    [settings.connections],
+  );
 
   const loadSales = useCallback(async () => {
     const res = await fetch(`/api/sales?${queryString}`);
@@ -277,7 +338,20 @@ export function AdminDashboard() {
 
       const json = (await res.json()) as { ok?: boolean; exportedRows?: number; reason?: string };
       if (!res.ok || !json.ok) {
-        throw new Error(json.reason ?? "No se pudo exportar");
+        const reason = json.reason ?? "No se pudo exportar";
+
+        // If Google Sheets is not configured, fallback to local XLS export.
+        if (reason.includes("GOOGLE_SERVICE_ACCOUNT_JSON") || reason.includes("GOOGLE_SHEETS_SPREADSHEET_ID")) {
+          window.location.href = "/api/export/xls?all=1";
+          setExportState({
+            loading: false,
+            message: "Google Sheets no esta configurado. Se descargo XLS con toda la tienda.",
+            error: "",
+          });
+          return;
+        }
+
+        throw new Error(reason);
       }
 
       setExportState({
@@ -293,6 +367,31 @@ export function AdminDashboard() {
         error: error instanceof Error ? error.message : "Error inesperado",
       });
     }
+  };
+
+  const downloadXls = (includeAll: boolean) => {
+    if (includeAll) {
+      window.location.href = "/api/export/xls?all=1";
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set("from", `${dateRange.from}T00:00:00.000Z`);
+    params.set("to", `${dateRange.to}T23:59:59.999Z`);
+    params.set("channels", selectedChannels.join(","));
+    window.location.href = `/api/export/xls?${params.toString()}`;
+  };
+
+  const downloadProductsXls = () => {
+    const params = new URLSearchParams();
+    params.set("limit", String(productLimit));
+
+    const q = productSearch.trim();
+    if (q) {
+      params.set("q", q);
+    }
+
+    window.location.href = `/api/export/xls/products?${params.toString()}`;
   };
 
   const runAutomations = async () => {
@@ -319,9 +418,127 @@ export function AdminDashboard() {
     }
   };
 
+  const loadTiendanubeProducts = async () => {
+    setProductsState({ loading: true, message: "", error: "" });
+    try {
+      const res = await fetch(`/api/tiendanube/products?limit=${productLimit}`);
+      const json = (await res.json()) as {
+        ok?: boolean;
+        total?: number;
+        items?: TiendanubeProductRow[];
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "No se pudieron cargar productos.");
+      }
+
+      setTiendanubeProducts(json.items ?? []);
+      setProductsState({
+        loading: false,
+        message: `Productos cargados: ${json.total ?? 0}`,
+        error: "",
+      });
+    } catch (error) {
+      setProductsState({
+        loading: false,
+        message: "",
+        error: error instanceof Error ? error.message : "Error inesperado",
+      });
+    }
+  };
+
+  const loadTiendanubeSales = async () => {
+    setSalesState({ loading: true, message: "", error: "" });
+    try {
+      const params = new URLSearchParams();
+      params.set("from", `${dateRange.from}T00:00:00.000Z`);
+      params.set("to", `${dateRange.to}T23:59:59.999Z`);
+      params.set("limit", String(salesLimit));
+
+      const res = await fetch(`/api/tiendanube/sales?${params.toString()}`);
+      const json = (await res.json()) as {
+        ok?: boolean;
+        total?: number;
+        items?: TiendanubeSaleRow[];
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "No se pudieron cargar ventas de Tiendanube.");
+      }
+
+      setTiendanubeSales(json.items ?? []);
+      setSalesState({
+        loading: false,
+        message: `Ventas cargadas: ${json.total ?? 0}`,
+        error: "",
+      });
+    } catch (error) {
+      setSalesState({
+        loading: false,
+        message: "",
+        error: error instanceof Error ? error.message : "Error inesperado",
+      });
+    }
+  };
+
   return (
-    <main className="dashboard-shell">
-      <section className="hero-card">
+    <main className="dashboard-layout">
+      <aside className="dashboard-sidebar">
+        <div className="brand-block">
+          <p className="brand-kicker">Backoffice</p>
+          <h2>Administrador Comercial</h2>
+          <p>Consolidacion operativa y monitoreo de canales en tiempo real.</p>
+        </div>
+
+        <nav className="sidebar-nav" aria-label="Panel administrativo">
+          <a href="#" className="nav-item active">
+            Resumen Ejecutivo
+          </a>
+          <a href="#" className="nav-item">
+            Operaciones
+          </a>
+          <a href="#" className="nav-item">
+            Conexiones
+          </a>
+          <a href="#" className="nav-item">
+            Exportaciones
+          </a>
+          <a href="#" className="nav-item">
+            Automatizaciones
+          </a>
+        </nav>
+
+        <div className="sidebar-foot">
+          <span>Canales activos</span>
+          <strong>{activeConnectionsCount}/3</strong>
+          <small>Integraciones API habilitadas: {apiConnectionsCount}</small>
+        </div>
+      </aside>
+
+      <div className="dashboard-content">
+        <header className="dashboard-topbar">
+          <div>
+            <p className="topbar-kicker">Panel de control</p>
+            <h1>Dashboard Administrativo</h1>
+          </div>
+          <div className="topbar-stats">
+            <div>
+              <span>Periodo</span>
+              <strong>
+                {dateRange.from} a {dateRange.to}
+              </strong>
+            </div>
+            <div>
+              <span>Canales seleccionados</span>
+              <strong>{selectedChannels.length}</strong>
+            </div>
+          </div>
+        </header>
+
+        <div className="dashboard-shell">
+          <section className="hero-card">
         <p className="kicker">Sistema Administrativo</p>
         <h1>Ventas unificadas con desglose fiscal</h1>
         <p>
@@ -380,6 +597,17 @@ export function AdminDashboard() {
             <button type="button" className="ghost" onClick={runAutomations} disabled={automationState.loading}>
               {automationState.loading ? "Corriendo jobs..." : "Ejecutar jobs vencidos"}
             </button>
+            <button type="button" className="ghost" onClick={() => downloadXls(true)}>
+              Descargar XLS (toda la tienda)
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => downloadXls(false)}
+              disabled={selectedChannels.length === 0}
+            >
+              Descargar XLS (filtro actual)
+            </button>
           </div>
 
           {syncState.message ? <p className="msg ok">{syncState.message}</p> : null}
@@ -421,6 +649,17 @@ export function AdminDashboard() {
                 <div className="panel-head compact">
                   <h3>{connection.channel}</h3>
                   <div className="panel-actions">
+                    {connection.channel === "tiendanube" ? (
+                      <button
+                        type="button"
+                        className="secondary small-button"
+                        onClick={() => {
+                          window.location.href = "/api/oauth/tiendanube/start";
+                        }}
+                      >
+                        Conectar OAuth
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="ghost small-button"
@@ -513,15 +752,38 @@ export function AdminDashboard() {
                     />
                   </label>
                   <label>
-                    <span>Refresh Token / Seller ID</span>
+                    <span>Client Secret</span>
+                    <input
+                      type="password"
+                      value={connection.credentials.clientSecret ?? ""}
+                      onChange={(e) =>
+                        updateConnection(connection.channel, (current) => ({
+                          ...current,
+                          credentials: { ...current.credentials, clientSecret: e.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>
+                      {connection.channel === "tiendanube"
+                        ? "User ID / Store ID"
+                        : connection.channel === "mercadolibre"
+                          ? "Seller ID"
+                          : "Refresh Token"}
+                    </span>
                     <input
                       type="text"
-                      value={connection.credentials.refreshToken ?? connection.credentials.sellerId ?? ""}
+                      value={
+                        connection.channel === "tiendanube" || connection.channel === "mercadolibre"
+                          ? connection.credentials.sellerId ?? ""
+                          : connection.credentials.refreshToken ?? ""
+                      }
                       onChange={(e) =>
                         updateConnection(connection.channel, (current) => ({
                           ...current,
                           credentials:
-                            current.channel === "mercadolibre"
+                            current.channel === "tiendanube" || current.channel === "mercadolibre"
                               ? { ...current.credentials, sellerId: e.target.value }
                               : { ...current.credentials, refreshToken: e.target.value },
                         }))
@@ -535,6 +797,12 @@ export function AdminDashboard() {
                 </p>
                 {connection.channel === "shopify" ? (
                   <p className="subtle">Para Shopify usa el dominio `mitienda.myshopify.com` y el Admin API access token.</p>
+                ) : null}
+                {connection.channel === "tiendanube" ? (
+                  <p className="subtle">
+                    En Partners, cambia la URL de redireccion despues de instalacion a
+                    <strong> /api/oauth/tiendanube/callback</strong> de este sistema y luego usa <strong>Conectar OAuth</strong>.
+                  </p>
                 ) : null}
                 {connectionTests[connection.channel]?.message ? (
                   <p className="msg ok">{connectionTests[connection.channel]?.message}</p>
@@ -747,6 +1015,133 @@ export function AdminDashboard() {
       </section>
 
       <section className="panel table-panel">
+        <div className="panel-head">
+          <h2>Productos Tiendanube</h2>
+          <div className="products-toolbar">
+            <label>
+              <span>Limite</span>
+              <input
+                type="number"
+                min="50"
+                max="5000"
+                step="50"
+                value={productLimit}
+                onChange={(e) => setProductLimit(Math.max(50, Math.min(5000, Number(e.target.value) || 300)))}
+              />
+            </label>
+            <button type="button" className="secondary" onClick={loadTiendanubeProducts} disabled={productsState.loading}>
+              {productsState.loading ? "Cargando..." : "Ver productos"}
+            </button>
+            <label>
+              <span>Limite ventas</span>
+              <input
+                type="number"
+                min="1"
+                max="2000"
+                step="50"
+                value={salesLimit}
+                onChange={(e) => setSalesLimit(Math.max(1, Math.min(2000, Number(e.target.value) || 200)))}
+              />
+            </label>
+            <button type="button" className="secondary" onClick={loadTiendanubeSales} disabled={salesState.loading}>
+              {salesState.loading ? "Cargando ventas..." : "Ver ventas Tiendanube"}
+            </button>
+            <button type="button" className="ghost" onClick={downloadProductsXls}>
+              Exportar productos XLS
+            </button>
+          </div>
+        </div>
+
+        <div className="products-toolbar">
+          <label>
+            <span>Buscar (nombre, ID o SKU)</span>
+            <input
+              type="text"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Ej: Remera, 12345, SKU-001"
+            />
+          </label>
+        </div>
+
+        {productsState.message ? <p className="msg ok">{productsState.message}</p> : null}
+        {productsState.error ? <p className="msg error">{productsState.error}</p> : null}
+        {salesState.message ? <p className="msg ok">{salesState.message}</p> : null}
+        {salesState.error ? <p className="msg error">{salesState.error}</p> : null}
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Precio</th>
+                <th>Promo</th>
+                <th>Stock</th>
+                <th>Variantes</th>
+                <th>Publicado</th>
+                <th>Envio gratis</th>
+                <th>Actualizado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.id}</td>
+                  <td>{item.name}</td>
+                  <td>{item.sku || "-"}</td>
+                  <td>{item.price !== null ? ARS.format(item.price) : "-"}</td>
+                  <td>{item.promotionalPrice !== null ? ARS.format(item.promotionalPrice) : "-"}</td>
+                  <td>{item.stock}</td>
+                  <td>{item.variants}</td>
+                  <td>{item.published ? "Si" : "No"}</td>
+                  <td>{item.freeShipping ? "Si" : "No"}</td>
+                  <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleString("es-AR") : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel table-panel">
+        <h2>Ventas Tiendanube (API real)</h2>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Order ID</th>
+                <th>Estado</th>
+                <th>Cliente</th>
+                <th>Moneda</th>
+                <th>Total</th>
+                <th>Descuento</th>
+                <th>Envio</th>
+                <th>Impuestos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tiendanubeSales.map((item) => (
+                <tr key={item.id}>
+                  <td>{new Date(item.date).toLocaleString("es-AR")}</td>
+                  <td>{item.id}</td>
+                  <td>{item.status}</td>
+                  <td>{item.customerName ?? "-"}</td>
+                  <td>{item.currency}</td>
+                  <td>{ARS.format(item.total)}</td>
+                  <td>{ARS.format(item.discount)}</td>
+                  <td>{ARS.format(item.shipping)}</td>
+                  <td>{ARS.format(item.tax)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel table-panel">
         <h2>Detalle de ventas</h2>
         <div className="table-wrap">
           <table>
@@ -779,6 +1174,9 @@ export function AdminDashboard() {
           </table>
         </div>
       </section>
+
+        </div>
+      </div>
     </main>
   );
 }

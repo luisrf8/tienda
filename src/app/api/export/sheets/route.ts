@@ -33,5 +33,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, reason: result.reason }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, exportedRows: filtered.length });
+  return NextResponse.json({ ok: true, exportedRows: filtered.length, mode: "append" });
 }

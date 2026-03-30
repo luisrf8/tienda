@@ -3,9 +3,14 @@
     {
       "channel": "tiendanube",
       "enabled": true,
-      "mode": "demo",
-      "storeName": "Demo Tiendanube",
-      "credentials": {}
+      "mode": "api",
+      "storeName": "Zagon",
+      "credentials": {
+        "clientId": "28366",
+        "clientSecret": "2f98adaf235e37a0d52d4a6eac44b8ea5a19e30f8d424b35",
+        "accessToken": "f945f7b132d9363402c4f68245e75424ff5bc4b7",
+        "sellerId": "7466547"
+      }
     },
     {
       "channel": "shopify",
@@ -18,8 +23,12 @@
       "channel": "mercadolibre",
       "enabled": true,
       "mode": "demo",
-      "storeName": "Demo MercadoLibre",
-      "credentials": {}
+      "storeName": "Mercado Pago Test",
+      "credentials": {
+        "clientId": "8883746350474944",
+        "accessToken": "APP_USR-8883746350474944-032919-05f3d5e4946528d728d057636f6aa5dc-3302020408",
+        "sellerId": "3302020408"
+      }
     }
   ],
   "exportSettings": {
@@ -30,7 +39,11 @@
     {
       "id": "daily-close",
       "name": "Cierre diario",
-      "channels": ["tiendanube", "shopify", "mercadolibre"],
+      "channels": [
+        "tiendanube",
+        "shopify",
+        "mercadolibre"
+      ],
       "fromDaysBack": 1,
       "schedule": "daily",
       "enabled": true,

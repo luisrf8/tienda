@@ -53,6 +53,28 @@ npm run dev
 
 Abrir http://localhost:3000
 
+## Docker (demo cliente)
+
+1. Construir imagen
+
+```bash
+docker build -t tienda-demo .
+```
+
+2. Ejecutar contenedor
+
+```bash
+docker run --rm -p 3000:3000 --env-file .env.local tienda-demo
+```
+
+Abrir http://localhost:3000
+
+Opcional: si queres persistir cambios en datos locales (`data/*.json`) entre corridas del contenedor:
+
+```bash
+docker run --rm -p 3000:3000 --env-file .env.local -v ${PWD}/data:/app/data tienda-demo
+```
+
 ## Endpoints
 
 - `POST /api/sync`
@@ -79,6 +101,19 @@ Abrir http://localhost:3000
 	}
 	```
 	- Exporta a Google Sheets la grilla filtrada.
+	- Si faltan variables de Google, el panel ahora hace fallback y descarga un XLS de toda la tienda.
+
+- `GET /api/export/xls`
+	- Descarga un archivo XLS compatible con Excel desde los datos locales.
+	- Query params opcionales:
+		- `all=1` para exportar toda la tienda
+		- `from`, `to`, `channels=tiendanube,shopify` para exportar un filtro
+
+- `GET /api/export/xls/products`
+	- Descarga XLS de productos Tiendanube desde API real.
+	- Query params opcionales:
+		- `limit=1000`
+		- `q=texto` para filtrar por nombre, ID o SKU
 
 - `GET /api/settings`
 	- Devuelve conexiones, exportacion y automatizaciones configuradas en el admin.
@@ -91,7 +126,17 @@ Abrir http://localhost:3000
 
 - `POST /api/connections/test`
 	- Valida una conexion individual enviada desde el admin.
-	- Shopify ya esta implementado en modo API real.
+	- Shopify y Tiendanube ya estan implementados en modo API real.
+
+- `GET /api/tiendanube/products?limit=300`
+	- Devuelve catalogo de productos de Tiendanube desde API real.
+	- Requiere conexion Tiendanube en modo `api` con token valido.
+
+- `GET /api/oauth/tiendanube/start`
+	- Inicia el flujo OAuth de Tiendanube y redirige a la pantalla de autorizacion.
+
+- `GET /api/oauth/tiendanube/callback`
+	- Recibe `code` + `state`, canjea token y guarda `accessToken` + `user_id` en settings.
 
 - `POST /api/automation/run-due`
 	- Ejecuta automatizaciones vencidas.
@@ -184,10 +229,40 @@ Para llevarlo a produccion, el esquema recomendado es:
 
 ## Proximo paso recomendado
 
-Reemplazar los mocks de `src/lib/connectors.ts` por integraciones reales:
+Implementar MercadoLibre API real (OAuth + refresh token) y mover persistencia a PostgreSQL para auditoria y escalabilidad.
 
-- Tiendanube API (token/OAuth)
-- Shopify Admin API (token/OAuth)
-- MercadoLibre API (OAuth + refresh token)
+## Tiendanube real (OAuth)
 
-Y mover persistencia a PostgreSQL para auditoria y escalabilidad.
+Tiendanube quedo integrada con OAuth de authorization code y consumo real de Orders API.
+
+### Configuracion en Partners
+
+1. En la app de Partners, cargar una URL publica del admin de este sistema en `Pagina de la aplicacion`.
+2. Cambiar `URL para redirigir despues de la instalacion` a:
+
+```text
+https://TU_DOMINIO/api/oauth/tiendanube/callback
+```
+
+No usar la URL default de partners (`https://partners.tiendanube.com/applications/authentication/{app_id}`), porque ahi no recibis el flujo completo para tu app.
+
+### Configuracion en el panel de este proyecto
+
+1. En `Conexiones > tiendanube`, cargar:
+	- `Client ID` = app_id de Tiendanube
+	- `Client Secret` = client_secret de la app
+2. Guardar configuracion.
+3. Click en `Conectar OAuth`.
+4. Aceptar permisos en Tiendanube.
+5. Volver al dashboard: se guarda automaticamente `accessToken` y `user_id/store_id`.
+
+### Scopes sugeridos para este MVP
+
+- `read_orders`
+- `read_customers` (opcional si queres enriquecer nombre del cliente)
+
+### Notas importantes
+
+- El header para API de Tiendanube es `Authentication: bearer TOKEN` (no `Authorization`).
+- `bearer` debe ir en minuscula.
+- El `code` del callback vence en 5 minutos y se usa una sola vez.

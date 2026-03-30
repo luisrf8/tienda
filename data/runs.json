@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "run-1774884977056-chivj6",
+    "createdAt": "2026-03-30T15:36:17.056Z",
+    "triggeredBy": "manual",
+    "from": "2026-02-28T00:00:00.000Z",
+    "to": "2026-03-30T23:59:59.999Z",
+    "channels": [
+      "tiendanube",
+      "shopify",
+      "mercadolibre"
+    ],
+    "status": "success",
+    "fetched": 18,
+    "inserted": 17,
+    "skipped": 1,
+    "exportedRows": 0,
+    "message": "Sincronizacion completada"
+  },
+  {
+    "id": "run-1774883056972-bjze21",
+    "createdAt": "2026-03-30T15:04:16.972Z",
+    "triggeredBy": "manual",
+    "from": "2026-02-28T00:00:00.000Z",
+    "to": "2026-03-30T23:59:59.999Z",
+    "channels": [
+      "tiendanube",
+      "shopify",
+      "mercadolibre"
+    ],
+    "status": "success",
+    "fetched": 17,
+    "inserted": 17,
+    "skipped": 0,
+    "exportedRows": 0,
+    "message": "Sincronizacion completada"
+  }
+]
